@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# Kotlin
+*.class
+
+# APK / signed artifacts
+*.apk
+*.idsig
+*.jks
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test output
+run_tests.sh

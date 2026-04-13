@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Actor\'s Toolkit</string>
+
+    <!-- General -->
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="save">Save</string>
+    <string name="ok">OK</string>
+
+    <!-- Script List -->
+    <string name="no_scripts">No scripts yet</string>
+    <string name="no_scripts_hint">Import a script to start practicing your lines</string>
+    <string name="import_script">Import Script</string>
+    <string name="delete_script">Delete Script</string>
+    <string name="delete_script_confirm">Delete \"%s\"? This cannot be undone.</string>
+    <string name="practiced_times">Practiced %d time(s)</string>
+
+    <!-- Import -->
+    <string name="select_file">Select a script file</string>
+    <string name="supported_formats">Supported: PDF, TXT, FDX (Final Draft)</string>
+    <string name="browse_files">Browse Files</string>
+    <string name="script_title">Script Title</string>
+    <string name="preview">Preview</string>
+
+    <!-- Script Detail -->
+    <string name="script_overview">Script Overview</string>
+    <string name="lines_count">%d lines</string>
+    <string name="characters_count">%d characters</string>
+    <string name="your_role">Your role: %s</string>
+    <string name="select_role">Select Your Role</string>
+    <string name="which_character">Which character are you playing?</string>
+
+    <!-- Practice -->
+    <string name="practice">Practice</string>
+    <string name="mode_read">Read</string>
+    <string name="mode_hide">Hide Lines</string>
+    <string name="mode_memorize">Memorize</string>
+    <string name="line_counter">Line %1$d of %2$d</string>
+    <string name="tap_to_reveal">Tap to reveal your line</string>
+    <string name="say_then_check">Say your line, then tap to check</string>
+    <string name="end_of_script">End of Script</string>
+    <string name="you_label">(You)</string>
+</resources>

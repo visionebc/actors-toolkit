@@ -1,0 +1,7 @@
+-keep class mx.visionebc.actorstoolkit.data.** { *; }
+-keep class com.tom_roush.pdfbox.** { *; }
+-dontwarn com.tom_roush.pdfbox.**
+-keep class androidx.camera.** { *; }
+-dontwarn androidx.camera.**
+-keep class androidx.media3.** { *; }
+-dontwarn androidx.media3.**
