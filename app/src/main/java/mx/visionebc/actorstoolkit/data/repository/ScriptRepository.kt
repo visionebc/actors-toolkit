@@ -16,6 +16,7 @@ class ScriptRepository(private val db: AppDatabase) {
     suspend fun deleteScript(script: Script) = db.scriptDao().delete(script)
     suspend fun deleteScriptById(id: Long) = db.scriptDao().deleteById(id)
     suspend fun updatePracticeStats(scriptId: Long) = db.scriptDao().updatePracticeStats(scriptId, System.currentTimeMillis())
+    suspend fun updateCharacterVoices(scriptId: Long, json: String) = db.scriptDao().updateCharacterVoices(scriptId, json)
 
     // Lines
     fun getLines(scriptId: Long): Flow<List<ScriptLine>> = db.scriptLineDao().getLinesForScript(scriptId)
@@ -27,6 +28,7 @@ class ScriptRepository(private val db: AppDatabase) {
     suspend fun setSkipped(lineId: Long, skipped: Boolean) = db.scriptLineDao().setSkipped(lineId, skipped)
     suspend fun updateEditedDialogue(lineId: Long, editedDialogue: String?) = db.scriptLineDao().updateEditedDialogue(lineId, editedDialogue)
     suspend fun updateIgnoredWords(lineId: Long, ignoredWords: String?) = db.scriptLineDao().updateIgnoredWords(lineId, ignoredWords)
+    suspend fun updateUserNotes(lineId: Long, notes: String?) = db.scriptLineDao().updateUserNotes(lineId, notes)
 
     // Characters
     fun getCharacters(scriptId: Long): Flow<List<Character>> = db.characterDao().getCharactersForScript(scriptId)

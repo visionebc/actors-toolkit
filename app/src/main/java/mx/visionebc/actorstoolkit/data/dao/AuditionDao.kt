@@ -10,8 +10,17 @@ interface AuditionDao {
     @Query("SELECT * FROM auditions ORDER BY auditionDate DESC, createdAt DESC")
     fun getAllAuditions(): Flow<List<Audition>>
 
+    @Query("SELECT * FROM auditions WHERE projectId = :projectId ORDER BY auditionDate DESC, createdAt DESC")
+    fun getByProjectId(projectId: Long): Flow<List<Audition>>
+
+    @Query("SELECT * FROM auditions WHERE projectId = :projectId ORDER BY auditionDate DESC, createdAt DESC")
+    suspend fun getByProjectIdSync(projectId: Long): List<Audition>
+
     @Query("SELECT * FROM auditions WHERE status = :status ORDER BY auditionDate DESC")
     fun getAuditionsByStatus(status: String): Flow<List<Audition>>
+
+    @Query("SELECT * FROM auditions ORDER BY createdAt DESC")
+    suspend fun getAllSync(): List<Audition>
 
     @Query("SELECT * FROM auditions WHERE id = :id")
     suspend fun getById(id: Long): Audition?

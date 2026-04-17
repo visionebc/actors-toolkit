@@ -44,6 +44,200 @@ private val DarkColorScheme = darkColorScheme(
     inversePrimary = GoldMuted
 )
 
+// ── Blue Theme ──
+private val BlueColorScheme = darkColorScheme(
+    primary = Color(0xFF64B5F6),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF1A3A5C),
+    onPrimaryContainer = Color(0xFFBBDEFB),
+    secondary = Color(0xFF4DD0E1),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF0A3040),
+    onSecondaryContainer = Color(0xFFB2EBF2),
+    tertiary = Color(0xFF80CBC4),
+    onTertiary = Color(0xFF0A2020),
+    tertiaryContainer = Color(0xFF0A2A2A),
+    onTertiaryContainer = Color(0xFFB2DFDB),
+    background = Color(0xFF0A1929),
+    onBackground = Color(0xFFE3F2FD),
+    surface = Color(0xFF102840),
+    onSurface = Color(0xFFE3F2FD),
+    surfaceVariant = Color(0xFF1A3550),
+    onSurfaceVariant = Color(0xFF90CAF9),
+    outline = Color(0xFF2A4A6A),
+    error = Color(0xFFFF6B6B),
+    onError = Color.White,
+    errorContainer = Color(0xFF3A1230),
+    onErrorContainer = Color(0xFFFFB3C9)
+)
+
+// ── Deep Blue Theme (strong/vivid) ──
+private val DeepBlueColorScheme = darkColorScheme(
+    primary = Color(0xFF2962FF),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF0D1F5C),
+    onPrimaryContainer = Color(0xFF82B1FF),
+    secondary = Color(0xFF448AFF),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF0A1840),
+    onSecondaryContainer = Color(0xFF82B1FF),
+    tertiary = Color(0xFF00B0FF),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFF002850),
+    onTertiaryContainer = Color(0xFF80D8FF),
+    background = Color(0xFF050D1E),
+    onBackground = Color(0xFFE3F2FD),
+    surface = Color(0xFF0A1830),
+    onSurface = Color(0xFFE3F2FD),
+    surfaceVariant = Color(0xFF0F2545),
+    onSurfaceVariant = Color(0xFF82B1FF),
+    outline = Color(0xFF1A3568),
+    error = Color(0xFFFF6B6B),
+    onError = Color.White,
+    errorContainer = Color(0xFF3A1230),
+    onErrorContainer = Color(0xFFFFB3C9)
+)
+
+// ── Pink & Violet Theme ──
+private val PinkVioletColorScheme = darkColorScheme(
+    primary = Color(0xFFE91E63),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF4A0A2A),
+    onPrimaryContainer = Color(0xFFF8BBD0),
+    secondary = Color(0xFFAB47BC),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF301040),
+    onSecondaryContainer = Color(0xFFE1BEE7),
+    tertiary = Color(0xFFFF80AB),
+    onTertiary = Color(0xFF3A0A1A),
+    tertiaryContainer = Color(0xFF3A1530),
+    onTertiaryContainer = Color(0xFFFFCDD2),
+    background = Color(0xFF1A0A1A),
+    onBackground = Color(0xFFFCE4EC),
+    surface = Color(0xFF2A1030),
+    onSurface = Color(0xFFFCE4EC),
+    surfaceVariant = Color(0xFF3A1540),
+    onSurfaceVariant = Color(0xFFCE93D8),
+    outline = Color(0xFF5A2A60),
+    error = Color(0xFFFF6B6B),
+    onError = Color.White,
+    errorContainer = Color(0xFF3A1230),
+    onErrorContainer = Color(0xFFFFB3C9)
+)
+
+// ── Green Theme ──
+private val GreenColorScheme = darkColorScheme(
+    primary = Color(0xFF66BB6A),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF1A3A1A),
+    onPrimaryContainer = Color(0xFFC8E6C9),
+    secondary = Color(0xFF26A69A),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF0A302A),
+    onSecondaryContainer = Color(0xFFB2DFDB),
+    tertiary = Color(0xFF81C784),
+    onTertiary = Color(0xFF0A200A),
+    tertiaryContainer = Color(0xFF0A2A15),
+    onTertiaryContainer = Color(0xFFA5D6A7),
+    background = Color(0xFF0A1A0A),
+    onBackground = Color(0xFFE8F5E9),
+    surface = Color(0xFF102A15),
+    onSurface = Color(0xFFE8F5E9),
+    surfaceVariant = Color(0xFF1A3A20),
+    onSurfaceVariant = Color(0xFFA5D6A7),
+    outline = Color(0xFF2A5A30),
+    error = Color(0xFFFF6B6B),
+    onError = Color.White,
+    errorContainer = Color(0xFF3A1230),
+    onErrorContainer = Color(0xFFFFB3C9)
+)
+
+// ── Yellow Theme ──
+private val YellowColorScheme = darkColorScheme(
+    primary = Color(0xFFFFD54F),
+    onPrimary = Color(0xFF1A1500),
+    primaryContainer = Color(0xFF3A3000),
+    onPrimaryContainer = Color(0xFFFFF9C4),
+    secondary = Color(0xFFFFB74D),
+    onSecondary = Color(0xFF1A1000),
+    secondaryContainer = Color(0xFF3A2800),
+    onSecondaryContainer = Color(0xFFFFE0B2),
+    tertiary = Color(0xFFFFCC80),
+    onTertiary = Color(0xFF1A1500),
+    tertiaryContainer = Color(0xFF2A2000),
+    onTertiaryContainer = Color(0xFFFFF3E0),
+    background = Color(0xFF1A1500),
+    onBackground = Color(0xFFFFF8E1),
+    surface = Color(0xFF2A2200),
+    onSurface = Color(0xFFFFF8E1),
+    surfaceVariant = Color(0xFF3A3010),
+    onSurfaceVariant = Color(0xFFFFE082),
+    outline = Color(0xFF5A4A20),
+    error = Color(0xFFFF6B6B),
+    onError = Color.White,
+    errorContainer = Color(0xFF3A1230),
+    onErrorContainer = Color(0xFFFFB3C9)
+)
+
+// ── iOS Theme (clean light, iOS system palette) ──
+private val IOSColorScheme = lightColorScheme(
+    primary = Color(0xFF007AFF),                // iOS system blue
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFD9EBFF),
+    onPrimaryContainer = Color(0xFF003E80),
+    secondary = Color(0xFF34C759),              // iOS green
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFD4F7DC),
+    onSecondaryContainer = Color(0xFF0A3A1A),
+    tertiary = Color(0xFF5AC8FA),               // iOS teal
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFD6F2FB),
+    onTertiaryContainer = Color(0xFF08384A),
+    background = Color(0xFFF2F2F7),             // iOS grouped bg
+    onBackground = Color(0xFF000000),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF000000),
+    surfaceVariant = Color(0xFFF2F2F7),
+    onSurfaceVariant = Color(0xFF3C3C43),
+    outline = Color(0xFFC6C6C8),                // iOS separator
+    outlineVariant = Color(0xFFE5E5EA),
+    error = Color(0xFFFF3B30),                  // iOS red
+    onError = Color.White,
+    errorContainer = Color(0xFFFFE5E3),
+    onErrorContainer = Color(0xFF5A0C08)
+)
+
+// ── Modern Theme (vibrant neon-dark, OLED-friendly) ──
+private val ModernColorScheme = darkColorScheme(
+    primary = Color(0xFF8B5CF6),                // vivid violet
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF2A1065),
+    onPrimaryContainer = Color(0xFFE9D5FF),
+    secondary = Color(0xFF06B6D4),              // electric cyan
+    onSecondary = Color(0xFF001018),
+    secondaryContainer = Color(0xFF083344),
+    onSecondaryContainer = Color(0xFFA5F3FC),
+    tertiary = Color(0xFFF472B6),               // hot pink accent
+    onTertiary = Color(0xFF2A0618),
+    tertiaryContainer = Color(0xFF4A0B2E),
+    onTertiaryContainer = Color(0xFFFCE7F3),
+    background = Color(0xFF0A0A0F),             // near-black (OLED)
+    onBackground = Color(0xFFF8FAFC),
+    surface = Color(0xFF14141C),
+    onSurface = Color(0xFFF8FAFC),
+    surfaceVariant = Color(0xFF1E1E2A),
+    onSurfaceVariant = Color(0xFFA1A1AA),
+    outline = Color(0xFF2D2D3A),
+    outlineVariant = Color(0xFF1A1A24),
+    error = Color(0xFFFB7185),
+    onError = Color.White,
+    errorContainer = Color(0xFF3F0A18),
+    onErrorContainer = Color(0xFFFECDD3),
+    inverseSurface = Color(0xFFF8FAFC),
+    inverseOnSurface = Color(0xFF14141C),
+    inversePrimary = Color(0xFFC4B5FD)
+)
+
 private val LightColorScheme = lightColorScheme(
     primary = GoldMuted,
     onPrimary = Color.White,
@@ -162,9 +356,25 @@ private val AppTypography = Typography(
 @Composable
 fun ActorsToolkitTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    themeStyle: String = "",
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = when (themeStyle) {
+        "BLUE" -> BlueColorScheme
+        "DEEP_BLUE" -> DeepBlueColorScheme
+        "PINK_VIOLET" -> PinkVioletColorScheme
+        "GREEN" -> GreenColorScheme
+        "YELLOW" -> YellowColorScheme
+        "IOS" -> IOSColorScheme
+        "MODERN" -> ModernColorScheme
+        else -> if (darkTheme) DarkColorScheme else LightColorScheme
+    }
+
+    val isLightBars = when (themeStyle) {
+        "BLUE", "DEEP_BLUE", "PINK_VIOLET", "GREEN", "YELLOW", "MODERN" -> false
+        "IOS" -> true
+        else -> !darkTheme
+    }
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -174,8 +384,8 @@ fun ActorsToolkitTheme(
                 window.statusBarColor = colorScheme.background.toArgb()
                 window.navigationBarColor = colorScheme.background.toArgb()
                 WindowCompat.getInsetsController(window, view).apply {
-                    isAppearanceLightStatusBars = !darkTheme
-                    isAppearanceLightNavigationBars = !darkTheme
+                    isAppearanceLightStatusBars = isLightBars
+                    isAppearanceLightNavigationBars = isLightBars
                 }
             }
         }

@@ -10,6 +10,8 @@ data class Script(
     val fileName: String,
     val fileType: String, // "pdf", "txt", "fdx"
     val rawContent: String, // Full text content
+    val projectId: Long? = null,
+    val characterVoicesJson: String = "{}", // JSON map: characterName -> TTS voice name
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val lastPracticedAt: Long? = null,

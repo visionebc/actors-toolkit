@@ -9,6 +9,9 @@ interface AudioRecordingDao {
     @Query("SELECT * FROM audio_recordings WHERE scriptId = :scriptId ORDER BY lineNumber")
     fun getRecordingsForScript(scriptId: Long): Flow<List<AudioRecording>>
 
+    @Query("SELECT * FROM audio_recordings WHERE scriptId = :scriptId ORDER BY lineNumber")
+    suspend fun getRecordingsForScriptSync(scriptId: Long): List<AudioRecording>
+
     @Query("SELECT * FROM audio_recordings WHERE scriptId = :scriptId AND characterName = :character AND lineNumber = :lineNumber LIMIT 1")
     suspend fun getRecording(scriptId: Long, character: String, lineNumber: Int): AudioRecording?
 

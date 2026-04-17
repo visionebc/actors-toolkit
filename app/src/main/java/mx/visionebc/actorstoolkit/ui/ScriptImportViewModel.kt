@@ -24,6 +24,7 @@ data class ImportState(
 class ScriptImportViewModel(private val repository: ScriptRepository) : ViewModel() {
 
     private val _state = MutableStateFlow(ImportState())
+    var projectId: Long? = null
     val state: StateFlow<ImportState> = _state
 
     fun loadFile(context: Context, uri: Uri, fileName: String) {
@@ -94,7 +95,8 @@ class ScriptImportViewModel(private val repository: ScriptRepository) : ViewMode
                         title = _state.value.title,
                         fileName = fileName,
                         fileType = fileType,
-                        rawContent = rawContent
+                        rawContent = rawContent,
+                        projectId = projectId
                     )
                 )
 

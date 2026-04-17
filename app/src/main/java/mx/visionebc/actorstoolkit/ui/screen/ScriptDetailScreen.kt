@@ -205,15 +205,13 @@ fun ScriptDetailScreen(
                                 }
 
                                 // Stage Blocking button
-                                OutlinedButton(
+                                FilledTonalButton(
                                     onClick = onBlocking,
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = Teal
-                                    ),
-                                    border = androidx.compose.foundation.BorderStroke(
-                                        1.5.dp, Teal.copy(alpha = 0.5f)
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                                     ),
                                     contentPadding = PaddingValues(vertical = 14.dp)
                                 ) {

@@ -6,28 +6,22 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "self_tapes",
+    tableName = "castings",
     foreignKeys = [
         ForeignKey(
-            entity = Audition::class,
+            entity = Project::class,
             parentColumns = ["id"],
-            childColumns = ["auditionId"],
-            onDelete = ForeignKey.SET_NULL
+            childColumns = ["projectId"],
+            onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["auditionId"])]
+    indices = [Index("projectId")]
 )
-data class SelfTape(
+data class Casting(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val title: String,
-    val videoPath: String,
-    val thumbnailPath: String = "",
-    val durationMs: Long = 0,
-    val auditionId: Long? = null,
-    val scriptId: Long? = null,
-    val trimStartMs: Long = 0,
-    val trimEndMs: Long = 0,
+    val projectId: Long,
+    val name: String,
     val notes: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()

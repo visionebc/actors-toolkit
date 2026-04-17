@@ -21,3 +21,6 @@ Thumbs.db
 
 # Test output
 run_tests.sh
+
+# Claude Code local settings
+.claude/

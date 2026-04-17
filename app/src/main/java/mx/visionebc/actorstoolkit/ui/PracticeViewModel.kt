@@ -54,13 +54,23 @@ data class PracticeState(
     val recordingLineIndex: Int = -1,
     val isPlayingRecording: Boolean = false,
     val playingLineIndex: Int = -1,
-    val recordings: Map<Int, AudioRecording> = emptyMap() // lineNumber -> recording
+    val recordings: Map<Int, AudioRecording> = emptyMap(), // lineNumber -> recording
+    val characterVoices: Map<String, String> = emptyMap() // characterName -> TTS voice name
 )
 
 class PracticeViewModel(private val repository: ScriptRepository) : ViewModel() {
 
     private val _state = MutableStateFlow(PracticeState())
     val state: StateFlow<PracticeState> = _state
+
+    // Set from the screen via setPlayOwnRecordings(); defaults to false ("say them live")
+    private var playOwnRecordings: Boolean = false
+    fun setPlayOwnRecordings(value: Boolean) { playOwnRecordings = value }
+
+    private fun shouldPlayRecording(lineCharacter: String): Boolean {
+        val myRole = _state.value.userRole?.name
+        return playOwnRecordings || lineCharacter != myRole
+    }
 
     var tts: TextToSpeech? = null
     private var autoPlayJob: Job? = null
@@ -139,6 +149,12 @@ class PracticeViewModel(private val repository: ScriptRepository) : ViewModel() 
                 // Load existing audio recordings
                 val recordingsMap = loadRecordingsMap(scriptId)
 
+                // Load per-character voice mapping
+                val voicesMap = try {
+                    val script = repository.getScript(scriptId)
+                    parseVoicesJson(script?.characterVoicesJson ?: "{}")
+                } catch (_: Exception) { emptyMap() }
+
                 _state.value = PracticeState(
                     scriptTitle = scriptInfo.title,
                     lines = lines,
@@ -150,7 +166,8 @@ class PracticeViewModel(private val repository: ScriptRepository) : ViewModel() 
                     blockingMarks = blockingMarks,
                     stageItems = stageItems,
                     movementPaths = movementPaths,
-                    recordings = recordingsMap
+                    recordings = recordingsMap,
+                    characterVoices = voicesMap
                 )
 
                 try {
@@ -382,7 +399,8 @@ class PracticeViewModel(private val repository: ScriptRepository) : ViewModel() 
     fun selectRole(character: Character) {
         viewModelScope.launch {
             try {
-                repository.setUserRole(character.scriptId, character.id)
+                val sid = character.scriptId ?: return@launch
+                repository.setUserRole(sid, character.id)
                 _state.value = _state.value.copy(
                     userRole = character.copy(isUserRole = true),
                     showRoleSelector = false
@@ -468,10 +486,10 @@ class PracticeViewModel(private val repository: ScriptRepository) : ViewModel() 
                 if (current.ttsEnabled && nextLine.character != current.userRole?.name && nextLine.speakableDialogue.isNotBlank()) {
                     // Use recorded audio if available, otherwise TTS
                     val recording = current.recordings[nextLine.lineNumber]
-                    if (recording != null && File(recording.filePath).exists()) {
+                    if (recording != null && File(recording.filePath).exists() && shouldPlayRecording(nextLine.character)) {
                         playRecording(nextIdx)
                     } else {
-                        speakLine(nextLine.speakableDialogue)
+                        speakLine(nextLine.speakableDialogue, nextLine.character)
                     }
                 }
             }
@@ -579,6 +597,22 @@ class PracticeViewModel(private val repository: ScriptRepository) : ViewModel() 
         }
     }
 
+    fun updateUserNotes(lineId: Long, notes: String?) {
+        viewModelScope.launch {
+            try {
+                val trimmed = notes?.trim()?.ifBlank { null }
+                repository.updateUserNotes(lineId, trimmed)
+                val current = _state.value
+                val updatedLines = current.lines.map {
+                    if (it.id == lineId) it.copy(userNotes = trimmed) else it
+                }
+                _state.value = current.copy(lines = updatedLines)
+            } catch (e: Exception) {
+                Log.e("PracticeVM", "Failed to update user notes", e)
+            }
+        }
+    }
+
     fun resetLineEdits(lineId: Long) {
         viewModelScope.launch {
             try {
@@ -660,7 +694,7 @@ class PracticeViewModel(private val repository: ScriptRepository) : ViewModel() 
 
                 // Check for voice recording first
                 val recording = _state.value.recordings[line.lineNumber]
-                if (recording != null && File(recording.filePath).exists()) {
+                if (recording != null && File(recording.filePath).exists() && shouldPlayRecording(line.character)) {
                     // Play the recorded audio
                     val completionFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
                     try {
@@ -690,7 +724,7 @@ class PracticeViewModel(private val repository: ScriptRepository) : ViewModel() 
                         delay(1000)
                     }
                 } else if (_state.value.ttsEnabled && !isUserLine && textToSpeak.isNotBlank()) {
-                    speakLine(textToSpeak)
+                    speakLine(textToSpeak, line.character)
                     _ttsFinished.first()
                     delay(500)
                 } else if (isUserLine) {
@@ -715,8 +749,68 @@ class PracticeViewModel(private val repository: ScriptRepository) : ViewModel() 
         _state.value = _state.value.copy(isAutoPlaying = false)
     }
 
-    private fun speakLine(text: String) {
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "line")
+    private fun speakLine(text: String, character: String? = null) {
+        val engine = tts ?: return
+        val voiceName = character?.let { _state.value.characterVoices[it] }
+        if (!voiceName.isNullOrBlank()) {
+            try {
+                val v = engine.voices?.firstOrNull { it.name == voiceName }
+                if (v != null) engine.voice = v
+            } catch (_: Exception) {}
+        } else {
+            try { engine.voice = engine.defaultVoice } catch (_: Exception) {}
+        }
+        engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "line")
+    }
+
+    private fun parseVoicesJson(json: String): Map<String, String> = try {
+        val obj = org.json.JSONObject(json)
+        val map = mutableMapOf<String, String>()
+        val keys = obj.keys()
+        while (keys.hasNext()) {
+            val k = keys.next()
+            map[k] = obj.optString(k, "")
+        }
+        map
+    } catch (_: Exception) { emptyMap() }
+
+    private fun voicesMapToJson(map: Map<String, String>): String {
+        val obj = org.json.JSONObject()
+        map.forEach { (k, v) -> if (v.isNotBlank()) obj.put(k, v) }
+        return obj.toString()
+    }
+
+    fun setCharacterVoice(character: String, voiceName: String?) {
+        val current = _state.value.characterVoices.toMutableMap()
+        if (voiceName.isNullOrBlank()) current.remove(character) else current[character] = voiceName
+        _state.value = _state.value.copy(characterVoices = current)
+        val sid = currentScriptId
+        if (sid > 0L) {
+            viewModelScope.launch {
+                try { repository.updateCharacterVoices(sid, voicesMapToJson(current)) } catch (_: Exception) {}
+            }
+        }
+    }
+
+    /** Sample a voice by name with a short phrase so the user can preview it. */
+    fun previewVoice(voiceName: String, sample: String = "Hello, this is my voice for rehearsal.") {
+        val engine = tts ?: return
+        try {
+            val v = engine.voices?.firstOrNull { it.name == voiceName }
+            if (v != null) engine.voice = v
+            engine.speak(sample, TextToSpeech.QUEUE_FLUSH, null, "preview")
+        } catch (_: Exception) {}
+    }
+
+    /** List available TTS voices (name, locale tag). */
+    fun availableVoices(): List<Pair<String, String>> {
+        val engine = tts ?: return emptyList()
+        return try {
+            engine.voices.orEmpty()
+                .filter { !it.isNetworkConnectionRequired }
+                .map { it.name to it.locale.toLanguageTag() }
+                .sortedBy { it.second }
+        } catch (_: Exception) { emptyList() }
     }
 
     fun stopTts() {

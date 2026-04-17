@@ -12,11 +12,23 @@ interface CharacterDao {
     @Query("SELECT * FROM characters WHERE scriptId = :scriptId ORDER BY lineCount DESC")
     suspend fun getCharactersForScriptSync(scriptId: Long): List<Character>
 
+    @Query("SELECT * FROM characters WHERE castingId = :castingId ORDER BY name ASC")
+    fun getCharactersForCasting(castingId: Long): Flow<List<Character>>
+
+    @Query("SELECT * FROM characters WHERE castingId = :castingId ORDER BY name ASC")
+    suspend fun getCharactersForCastingSync(castingId: Long): List<Character>
+
+    @Query("SELECT * FROM characters WHERE id = :id")
+    suspend fun getById(id: Long): Character?
+
     @Query("SELECT * FROM characters WHERE scriptId = :scriptId AND isUserRole = 1 LIMIT 1")
     suspend fun getUserRole(scriptId: Long): Character?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(characters: List<Character>)
+
+    @Insert
+    suspend fun insert(character: Character): Long
 
     @Update
     suspend fun update(character: Character)
@@ -29,4 +41,7 @@ interface CharacterDao {
 
     @Query("DELETE FROM characters WHERE scriptId = :scriptId")
     suspend fun deleteForScript(scriptId: Long)
+
+    @Query("DELETE FROM characters WHERE id = :id")
+    suspend fun deleteById(id: Long)
 }

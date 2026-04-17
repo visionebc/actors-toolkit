@@ -27,7 +27,8 @@ data class ScriptLine(
     val isMemorized: Boolean = false,
     val isSkipped: Boolean = false,
     val editedDialogue: String? = null,
-    val ignoredWords: String? = null
+    val ignoredWords: String? = null,
+    val userNotes: String? = null
 ) {
     /** Returns the user-edited dialogue if set, otherwise the original */
     val effectiveDialogue: String get() = editedDialogue ?: dialogue

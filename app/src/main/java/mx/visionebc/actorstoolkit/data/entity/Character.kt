@@ -9,18 +9,28 @@ import androidx.room.PrimaryKey
     tableName = "characters",
     foreignKeys = [
         ForeignKey(
+            entity = Casting::class,
+            parentColumns = ["id"],
+            childColumns = ["castingId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
             entity = Script::class,
             parentColumns = ["id"],
             childColumns = ["scriptId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("scriptId")]
+    indices = [Index("castingId"), Index("scriptId")]
 )
 data class Character(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val scriptId: Long,
+    val castingId: Long? = null,
+    val scriptId: Long? = null,
     val name: String,
     val lineCount: Int = 0,
-    val isUserRole: Boolean = false
+    val isUserRole: Boolean = false,
+    val notes: String = "",
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
 )

@@ -77,6 +77,11 @@ fun PracticeScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
+    // Respect the "Play own recordings" preference during practice
+    val settingsDs = remember { mx.visionebc.actorstoolkit.data.preferences.SettingsDataStore(context.applicationContext) }
+    val playOwn by settingsDs.playOwnRecordings.collectAsState(initial = false)
+    LaunchedEffect(playOwn) { viewModel.setPlayOwnRecordings(playOwn) }
+
     // Permission handling
     var hasRecordPermission by remember {
         mutableStateOf(
@@ -92,6 +97,9 @@ fun PracticeScreen(
 
     // Pending record action after permission grant
     var pendingRecordLineIndex by remember { mutableIntStateOf(-1) }
+
+    var showVoicesDialog by remember { mutableStateOf(false) }
+    var voicePickerFor by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(hasRecordPermission, pendingRecordLineIndex) {
         if (hasRecordPermission && pendingRecordLineIndex >= 0) {
@@ -219,6 +227,14 @@ fun PracticeScreen(
                         )
                     }
                     Spacer(Modifier.width(4.dp))
+                    // Character voices picker
+                    IconButton(
+                        onClick = { showVoicesDialog = true },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(Icons.Default.RecordVoiceOver, "Character voices", modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(4.dp))
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
@@ -249,7 +265,7 @@ fun PracticeScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                PracticeMode.entries.forEach { mode ->
+                                PracticeMode.entries.filter { it != PracticeMode.HIDE_MY_LINES }.forEach { mode ->
                                     val isSelected = state.mode == mode
                                     FilterChip(
                                         selected = isSelected,
@@ -258,8 +274,8 @@ fun PracticeScreen(
                                             Text(
                                                 when (mode) {
                                                     PracticeMode.READ_THROUGH -> "Read"
-                                                    PracticeMode.HIDE_MY_LINES -> "Hide Lines"
                                                     PracticeMode.MEMORIZATION -> "Memorize"
+                                                    else -> ""
                                                 },
                                                 style = MaterialTheme.typography.labelMedium,
                                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
@@ -267,10 +283,12 @@ fun PracticeScreen(
                                         },
                                         modifier = Modifier.weight(1f),
                                         enabled = !state.isAutoPlaying,
-                                        shape = RoundedCornerShape(10.dp),
+                                        shape = RoundedCornerShape(12.dp),
                                         colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                            selectedLabelColor = MaterialTheme.colorScheme.primary
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     )
                                 }
@@ -339,8 +357,8 @@ fun PracticeScreen(
                                             .height(44.dp),
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.filledTonalButtonColors(
-                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                                         )
                                     ) {
                                         Icon(Icons.Default.PlayArrow, null, Modifier.size(20.dp))
@@ -610,7 +628,8 @@ fun PracticeScreen(
                                     }
                                 },
                                 onPlayRecording = { viewModel.playRecording(index) },
-                                onDeleteRecording = { viewModel.deleteRecording(index) }
+                                onDeleteRecording = { viewModel.deleteRecording(index) },
+                                onUpdateNotes = { notes -> viewModel.updateUserNotes(line.id, notes) }
                             )
                         }
 
@@ -644,6 +663,110 @@ fun PracticeScreen(
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Character voices dialog ──
+    if (showVoicesDialog) {
+        val distinctChars = remember(state.lines) {
+            state.lines.map { it.character }.filter { it.isNotBlank() }.distinct().sorted()
+        }
+        AnimatedDialog(
+            onDismissRequest = { showVoicesDialog = false },
+            title = "Character Voices",
+            icon = { Icon(Icons.Default.RecordVoiceOver, null, tint = MaterialTheme.colorScheme.primary) },
+            confirmButton = {
+                Button(onClick = { showVoicesDialog = false }, shape = RoundedCornerShape(12.dp)) { Text("Done") }
+            }
+        ) {
+            Text(
+                "Assign a TTS voice to each character. Empty = default voice. Your own role's voice still only plays if the toggle in Settings is on.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            distinctChars.forEach { ch ->
+                val current = state.characterVoices[ch].orEmpty()
+                val isMe = state.userRole?.name == ch
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(ch, style = MaterialTheme.typography.bodyLarge)
+                            if (isMe) {
+                                Spacer(Modifier.width(8.dp))
+                                Surface(shape = RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                                    Text("my role", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                }
+                            }
+                        }
+                        Text(
+                            if (current.isBlank()) "Default voice" else current,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                    TextButton(onClick = { voicePickerFor = ch }) { Text("Change") }
+                    if (current.isNotBlank()) {
+                        IconButton(onClick = { viewModel.setCharacterVoice(ch, null) }) {
+                            Icon(Icons.Default.Close, "Reset", Modifier.size(18.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Voice picker sub-dialog ──
+    voicePickerFor?.let { ch ->
+        val voices = remember { viewModel.availableVoices() }
+        val current = state.characterVoices[ch].orEmpty()
+        AnimatedDialog(
+            onDismissRequest = { voicePickerFor = null },
+            title = "Voice for \"$ch\"",
+            icon = { Icon(Icons.Default.RecordVoiceOver, null, tint = MaterialTheme.colorScheme.primary) },
+            confirmButton = {
+                Button(onClick = { voicePickerFor = null }, shape = RoundedCornerShape(12.dp)) { Text("Done") }
+            }
+        ) {
+            if (voices.isEmpty()) {
+                Text("No TTS voices available on this device.", color = MaterialTheme.colorScheme.error)
+            } else {
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    item {
+                        Row(
+                            Modifier.fillMaxWidth().clickable {
+                                viewModel.setCharacterVoice(ch, null)
+                            }.padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = current.isBlank(), onClick = { viewModel.setCharacterVoice(ch, null) })
+                            Text("Default voice", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                    items(voices.size) { idx ->
+                        val (name, locale) = voices[idx]
+                        Row(
+                            Modifier.fillMaxWidth().clickable { viewModel.setCharacterVoice(ch, name) }.padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = current == name, onClick = { viewModel.setCharacterVoice(ch, name) })
+                            Column(Modifier.weight(1f)) {
+                                Text(name, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                Text(locale, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            IconButton(onClick = { viewModel.previewVoice(name) }) {
+                                Icon(Icons.Default.PlayArrow, "Preview", Modifier.size(18.dp))
                             }
                         }
                     }
@@ -826,7 +949,8 @@ fun PracticeLineCard(
     isRecordingLine: Boolean = false,
     onRecord: () -> Unit = {},
     onPlayRecording: () -> Unit = {},
-    onDeleteRecording: () -> Unit = {}
+    onDeleteRecording: () -> Unit = {},
+    onUpdateNotes: (String?) -> Unit = {}
 ) {
     val containerColor = when {
         isRecordingLine -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
@@ -1227,6 +1351,61 @@ fun PracticeLineCard(
                         color = MaterialTheme.colorScheme.tertiary,
                         trackColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
                     )
+                }
+
+                // User notes (not read by TTS)
+                if (!line.isSkipped && !isAutoPlaying) {
+                    var showNotesEdit by remember { mutableStateOf(false) }
+                    var notesText by remember(line.id, line.userNotes) { mutableStateOf(line.userNotes ?: "") }
+
+                    if (!line.userNotes.isNullOrBlank() && !showNotesEdit) {
+                        Spacer(Modifier.height(6.dp))
+                        Surface(
+                            onClick = { showNotesEdit = true },
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+                        ) {
+                            Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.Top) {
+                                Icon(Icons.Default.StickyNote2, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.tertiary)
+                                Spacer(Modifier.width(6.dp))
+                                Text(line.userNotes!!, style = MaterialTheme.typography.bodySmall, fontStyle = FontStyle.Italic, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    } else if (showNotesEdit) {
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = notesText,
+                            onValueChange = { notesText = it },
+                            placeholder = { Text("Add a note...", style = MaterialTheme.typography.bodySmall) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            maxLines = 3,
+                            trailingIcon = {
+                                Row {
+                                    IconButton(onClick = { onUpdateNotes(notesText.ifBlank { null }); showNotesEdit = false }, Modifier.size(28.dp)) {
+                                        Icon(Icons.Default.Check, "Save", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    IconButton(onClick = { notesText = line.userNotes ?: ""; showNotesEdit = false }, Modifier.size(28.dp)) {
+                                        Icon(Icons.Default.Close, "Cancel", Modifier.size(16.dp))
+                                    }
+                                }
+                            }
+                        )
+                    } else {
+                        Spacer(Modifier.height(4.dp))
+                        Surface(
+                            onClick = { showNotesEdit = true },
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color.Transparent
+                        ) {
+                            Row(Modifier.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.StickyNote2, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Add note", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            }
+                        }
+                    }
                 }
             }
         }

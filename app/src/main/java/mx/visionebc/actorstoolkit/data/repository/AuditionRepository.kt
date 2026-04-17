@@ -8,6 +8,9 @@ class AuditionRepository(private val db: AppDatabase) {
 
     fun getAllAuditions(): Flow<List<Audition>> = db.auditionDao().getAllAuditions()
 
+    fun getAuditionsByProject(projectId: Long): Flow<List<Audition>> =
+        db.auditionDao().getByProjectId(projectId)
+
     fun getAuditionsByStatus(status: String): Flow<List<Audition>> =
         db.auditionDao().getAuditionsByStatus(status)
 

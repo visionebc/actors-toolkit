@@ -252,7 +252,7 @@ fun AuditionCard(
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showStatusMenu by remember { mutableStateOf(false) }
-    val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat("MMM d, yyyy · h:mm a", Locale.getDefault()) }
     val color = statusColor(audition.status)
 
     Card(

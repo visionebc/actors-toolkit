@@ -31,6 +31,21 @@ interface ScriptDao {
     @Query("DELETE FROM scripts WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("""
+        SELECT id, title, fileName, fileType, createdAt, updatedAt, lastPracticedAt, practiceCount
+        FROM scripts WHERE projectId = :projectId ORDER BY updatedAt DESC
+    """)
+    fun getScriptInfosByProject(projectId: Long): Flow<List<ScriptInfo>>
+
+    @Query("SELECT * FROM scripts WHERE projectId = :projectId ORDER BY updatedAt DESC")
+    suspend fun getByProjectSync(projectId: Long): List<Script>
+
+    @Query("SELECT * FROM scripts WHERE projectId = :projectId AND title = :title LIMIT 1")
+    suspend fun getByProjectAndTitle(projectId: Long, title: String): Script?
+
     @Query("UPDATE scripts SET lastPracticedAt = :time, practiceCount = practiceCount + 1 WHERE id = :scriptId")
     suspend fun updatePracticeStats(scriptId: Long, time: Long)
+
+    @Query("UPDATE scripts SET characterVoicesJson = :json WHERE id = :scriptId")
+    suspend fun updateCharacterVoices(scriptId: Long, json: String)
 }

@@ -1,41 +1,52 @@
 package mx.visionebc.actorstoolkit.ui
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import mx.visionebc.actorstoolkit.BuildConfig
+import mx.visionebc.actorstoolkit.data.preferences.SettingsDataStore
+import mx.visionebc.actorstoolkit.data.preferences.ThemeMode
 import mx.visionebc.actorstoolkit.ui.navigation.AppNavHost
-import mx.visionebc.actorstoolkit.ui.navigation.NavRoutes
 import mx.visionebc.actorstoolkit.ui.theme.ActorsToolkitTheme
 import mx.visionebc.actorstoolkit.updater.AppUpdater
 import mx.visionebc.actorstoolkit.updater.UpdateChecker
 import mx.visionebc.actorstoolkit.updater.UpdateInfo
 
-data class BottomNavItem(
-    val label: String,
-    val icon: ImageVector,
-    val route: String
-)
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            ActorsToolkitTheme {
-                MainApp()
+            val settingsDataStore = remember { SettingsDataStore(applicationContext) }
+            val themeMode by settingsDataStore.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+            val darkTheme = when (themeMode) {
+                ThemeMode.LIGHT, ThemeMode.IOS -> false
+                ThemeMode.DARK, ThemeMode.MODERN -> true
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                else -> true // color themes are all dark-based
+            }
+            val themeStyle = when (themeMode) {
+                ThemeMode.BLUE, ThemeMode.DEEP_BLUE, ThemeMode.PINK_VIOLET, ThemeMode.GREEN, ThemeMode.YELLOW,
+                ThemeMode.IOS, ThemeMode.MODERN -> themeMode.name
+                else -> ""
+            }
+            ActorsToolkitTheme(darkTheme = darkTheme, themeStyle = themeStyle) {
+                MainApp(settingsDataStore = settingsDataStore, onRestartApp = {
+                    val intent = Intent(this, MainActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    startActivity(intent)
+                    finish()
+                })
             }
         }
     }
@@ -43,29 +54,14 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainApp() {
+fun MainApp(
+    settingsDataStore: SettingsDataStore,
+    onRestartApp: () -> Unit
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var showUpdateDialog by remember { mutableStateOf(false) }
-
-    val bottomNavItems = remember {
-        listOf(
-            BottomNavItem("Scripts", Icons.Default.MenuBook, NavRoutes.ScriptList.route),
-            BottomNavItem("Auditions", Icons.Default.TheaterComedy, NavRoutes.AuditionList.route),
-            BottomNavItem("Self-Tapes", Icons.Default.Videocam, NavRoutes.SelfTapeList.route)
-        )
-    }
-
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
-    // Determine if bottom bar should be visible (only on top-level screens)
-    val showBottomBar = currentRoute in listOf(
-        NavRoutes.ScriptList.route,
-        NavRoutes.AuditionList.route,
-        NavRoutes.SelfTapeList.route
-    )
 
     LaunchedEffect(Unit) {
         try {
@@ -77,52 +73,11 @@ fun MainApp() {
         } catch (_: Exception) {}
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            if (showBottomBar) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 4.dp
-                ) {
-                    bottomNavItems.forEach { item ->
-                        val selected = currentRoute == item.route
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                if (currentRoute != item.route) {
-                                    navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    item.icon,
-                                    contentDescription = item.label,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            },
-                            label = { Text(item.label) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
-        AppNavHost(navController = navController, modifier = Modifier.padding(innerPadding))
-    }
+    AppNavHost(
+        navController = navController,
+        settingsDataStore = settingsDataStore,
+        onRestartApp = onRestartApp
+    )
 
     if (showUpdateDialog && updateInfo != null) {
         val info = updateInfo!!

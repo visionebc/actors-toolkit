@@ -33,6 +33,9 @@ interface ScriptLineDao {
     @Query("UPDATE script_lines SET ignoredWords = :ignoredWords WHERE id = :lineId")
     suspend fun updateIgnoredWords(lineId: Long, ignoredWords: String?)
 
+    @Query("UPDATE script_lines SET userNotes = :notes WHERE id = :lineId")
+    suspend fun updateUserNotes(lineId: Long, notes: String?)
+
     @Query("DELETE FROM script_lines WHERE scriptId = :scriptId")
     suspend fun deleteForScript(scriptId: Long)
 }
