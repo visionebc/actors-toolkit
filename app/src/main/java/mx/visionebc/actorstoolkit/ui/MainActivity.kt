@@ -18,7 +18,11 @@ import mx.visionebc.actorstoolkit.BuildConfig
 import mx.visionebc.actorstoolkit.data.preferences.SettingsDataStore
 import mx.visionebc.actorstoolkit.data.preferences.ThemeMode
 import mx.visionebc.actorstoolkit.ui.navigation.AppNavHost
+import mx.visionebc.actorstoolkit.ui.screen.SplashScreen
 import mx.visionebc.actorstoolkit.ui.theme.ActorsToolkitTheme
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import mx.visionebc.actorstoolkit.updater.AppUpdater
 import mx.visionebc.actorstoolkit.updater.UpdateChecker
 import mx.visionebc.actorstoolkit.updater.UpdateInfo
@@ -62,6 +66,7 @@ fun MainApp(
     val context = LocalContext.current
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var showUpdateDialog by remember { mutableStateOf(false) }
+    var splashDone by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         try {
@@ -73,11 +78,20 @@ fun MainApp(
         } catch (_: Exception) {}
     }
 
-    AppNavHost(
-        navController = navController,
-        settingsDataStore = settingsDataStore,
-        onRestartApp = onRestartApp
-    )
+    Box(Modifier.fillMaxSize()) {
+        AppNavHost(
+            navController = navController,
+            settingsDataStore = settingsDataStore,
+            onRestartApp = onRestartApp
+        )
+        AnimatedVisibility(
+            visible = !splashDone,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            SplashScreen(onFinished = { splashDone = true })
+        }
+    }
 
     if (showUpdateDialog && updateInfo != null) {
         val info = updateInfo!!

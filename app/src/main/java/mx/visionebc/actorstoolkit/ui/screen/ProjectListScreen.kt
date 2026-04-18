@@ -44,7 +44,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import mx.visionebc.actorstoolkit.R
 import kotlinx.coroutines.launch
 import mx.visionebc.actorstoolkit.data.entity.Project
 import mx.visionebc.actorstoolkit.data.entity.ProjectJsonConverter
@@ -88,17 +92,27 @@ fun ProjectListScreen(
         topBar = {
             LargeTopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            "Projects",
-                            style = MaterialTheme.typography.headlineLarge
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(R.drawable.logo),
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.size(56.dp)
                         )
-                        Text(
-                            if (allProjects.isEmpty()) "Organize your acting work"
-                            else "${allProjects.size} project${if (allProjects.size != 1) "s" else ""}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                "Actors Toolkit",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                if (allProjects.isEmpty()) "Organize your acting work"
+                                else "${allProjects.size} project${if (allProjects.size != 1) "s" else ""}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
