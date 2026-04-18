@@ -423,36 +423,34 @@ fun ProjectAddEditScreen(
             // ── Locations ──
             SectionLabel("Locations")
             locations.forEachIndexed { i, loc ->
-                Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), modifier = Modifier.fillMaxWidth().clickable {
+                val fieldLabel = loc.label.ifBlank { loc.type.ifBlank { "Location ${i + 1}" } }
+                Box(Modifier.fillMaxWidth().clickable {
                     showLocationDialog = i; locType = loc.type; locAddress = loc.address; locLabel = loc.label; locLat = loc.latitude; locLng = loc.longitude
                 }) {
-                    Column {
-                        if (loc.latitude != null && loc.longitude != null) {
-                            coil.compose.AsyncImage(
-                                model = "https://staticmap.openstreetmap.de/staticmap.php?center=${loc.latitude},${loc.longitude}&zoom=15&size=400x100&markers=${loc.latitude},${loc.longitude},red-pushpin",
-                                contentDescription = "Map",
-                                modifier = Modifier.fillMaxWidth().height(80.dp),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                            )
-                        }
-                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.LocationOn, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(8.dp))
-                            Column(Modifier.weight(1f)) {
-                                if (loc.label.isNotBlank()) Text(loc.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                                Text(loc.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    OutlinedTextField(
+                        value = loc.address,
+                        onValueChange = {},
+                        label = { Text(fieldLabel) },
+                        leadingIcon = { Icon(Icons.Default.LocationOn, null) },
+                        trailingIcon = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (loc.latitude != null && loc.longitude != null) {
+                                    IconButton(onClick = {
+                                        val q = "geo:${loc.latitude},${loc.longitude}?q=${loc.latitude},${loc.longitude}(${Uri.encode(loc.label.ifBlank { loc.address })})"
+                                        try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(q))) } catch (_: Exception) {}
+                                    }, Modifier.size(36.dp)) {
+                                        Icon(Icons.Default.Map, "Open in Maps", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                                IconButton(onClick = { locations = locations.toMutableList().also { it.removeAt(i) } }, Modifier.size(32.dp)) {
+                                    Icon(Icons.Default.Close, "Remove", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                                }
                             }
-                            IconButton(onClick = {
-                                val q = if (loc.latitude != null) "geo:${loc.latitude},${loc.longitude}?q=${loc.latitude},${loc.longitude}(${Uri.encode(loc.label.ifBlank { loc.address })})" else "geo:0,0?q=${Uri.encode(loc.address)}"
-                                try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(q))) } catch (_: Exception) {}
-                            }, Modifier.size(36.dp)) {
-                                Icon(Icons.Default.Map, "Open in Maps", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                            }
-                            IconButton(onClick = { locations = locations.toMutableList().also { it.removeAt(i) } }, Modifier.size(32.dp)) {
-                                Icon(Icons.Default.Close, "Remove", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                            }
-                        }
-                    }
+                        },
+                        readOnly = true, enabled = false,
+                        modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), singleLine = false, maxLines = 2,
+                        colors = disabledFieldColors
+                    )
                 }
             }
             OutlinedButton(onClick = { showLocationDialog = -1; locType = ""; locAddress = ""; locLabel = ""; locLat = null; locLng = null }, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -597,24 +595,13 @@ fun ProjectAddEditScreen(
 
     // ── Map picker ──
     if (showMapPicker) {
-        val scope = rememberCoroutineScope()
         MapPickerDialog(
-            initialLat = locLat, initialLng = locLng,
+            initialLat = locLat, initialLng = locLng, initialAddress = locAddress,
             onDismiss = { showMapPicker = false },
-            onConfirm = { lat, lng ->
+            onConfirm = { lat, lng, addr ->
                 locLat = lat; locLng = lng
+                if (addr.isNotBlank()) locAddress = addr
                 showMapPicker = false
-                scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                    try {
-                        val geocoder = android.location.Geocoder(context, Locale.getDefault())
-                        @Suppress("DEPRECATION")
-                        val results = geocoder.getFromLocation(lat, lng, 1)
-                        if (!results.isNullOrEmpty()) {
-                            val formatted = results[0].getAddressLine(0)
-                            if (!formatted.isNullOrBlank()) locAddress = formatted
-                        }
-                    } catch (_: Exception) {}
-                }
             }
         )
     }

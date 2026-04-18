@@ -13,8 +13,8 @@ android {
         applicationId = "mx.visionebc.actorstoolkit"
         minSdk = 26
         targetSdk = 34
-        versionCode = 29
-        versionName = "0.9.0"
+        versionCode = 39
+        versionName = "0.10.4"
         buildConfigField("String", "UPDATE_URL", "\"https://apps.visionebc.mx/api/app/mx.visionebc.actorstoolkit/latest\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -107,6 +107,9 @@ dependencies {
 
 // File picker
     implementation("androidx.documentfile:documentfile:1.0.1")
+
+    // OpenStreetMap native map (replaces WebView+Leaflet)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
 
     // Testing - Unit Tests
     testImplementation("junit:junit:4.13.2")

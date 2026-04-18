@@ -165,6 +165,7 @@ private fun ProjectEditableTab(project: Project, onSave: (Project) -> Unit, audi
     var locLat by remember { mutableStateOf<Double?>(null) }
     var locLng by remember { mutableStateOf<Double?>(null) }
     var locSearching by remember { mutableStateOf(false) }
+    var showMapPicker by remember { mutableStateOf(false) }
     var showLinkDialog by remember { mutableStateOf<Int?>(null) }
     var linkDialogUrl by remember { mutableStateOf("") }
     var linkDialogLabel by remember { mutableStateOf("") }
@@ -182,7 +183,6 @@ private fun ProjectEditableTab(project: Project, onSave: (Project) -> Unit, audi
     var presEndHour by remember { mutableStateOf(-1) }
     var presEndMin by remember { mutableStateOf(0) }
 
-    val locationTypes = listOf("Rehearsal", "Presentation", "Casting", "Filming", "Other")
     val dayNames = mapOf("MON" to "Monday", "TUE" to "Tuesday", "WED" to "Wednesday", "THU" to "Thursday", "FRI" to "Friday", "SAT" to "Saturday", "SUN" to "Sunday")
     val recurrenceOptions = listOf("NONE", "DAILY") + dayNames.keys.map { "WEEKLY_$it" } + dayNames.keys.map { "BIWEEKLY_$it" }
 
@@ -476,46 +476,47 @@ private fun ProjectEditableTab(project: Project, onSave: (Project) -> Unit, audi
                 Icon(Icons.Default.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Auditions/Castings")
             }
 
-            // ── Locations (dynamic, with types + Google Maps) ──
+            // ── Locations ──
             SectionLabel("Locations")
             locations.forEachIndexed { i, loc ->
-                Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), modifier = Modifier.fillMaxWidth().clickable {
+                val fieldLabel = loc.label.ifBlank { loc.type.ifBlank { "Location ${i + 1}" } }
+                Box(Modifier.fillMaxWidth().clickable {
                     showLocationDialog = i; locType = loc.type; locAddress = loc.address; locLabel = loc.label; locLat = loc.latitude; locLng = loc.longitude
                 }) {
-                    Column {
-                        // Map thumbnail if coordinates exist
-                        if (loc.latitude != null && loc.longitude != null) {
-                            coil.compose.AsyncImage(
-                                model = "https://staticmap.openstreetmap.de/staticmap.php?center=${loc.latitude},${loc.longitude}&zoom=15&size=400x100&markers=${loc.latitude},${loc.longitude},red-pushpin",
-                                contentDescription = "Map",
-                                modifier = Modifier.fillMaxWidth().height(80.dp),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                            )
-                        }
-                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.LocationOn, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(8.dp))
-                            Column(Modifier.weight(1f)) {
-                                if (loc.type.isNotBlank()) {
-                                    Surface(shape = RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-                                        Text(loc.type, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                    OutlinedTextField(
+                        value = loc.address,
+                        onValueChange = {},
+                        label = { Text(fieldLabel) },
+                        leadingIcon = { Icon(Icons.Default.LocationOn, null) },
+                        trailingIcon = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (loc.latitude != null && loc.longitude != null) {
+                                    IconButton(onClick = {
+                                        val q = "geo:${loc.latitude},${loc.longitude}?q=${loc.latitude},${loc.longitude}(${Uri.encode(loc.label.ifBlank { loc.address })})"
+                                        try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(q))) } catch (_: Exception) {}
+                                    }, Modifier.size(36.dp)) {
+                                        Icon(Icons.Default.Map, "Open in Maps", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                                     }
-                                    Spacer(Modifier.height(4.dp))
                                 }
-                                if (loc.label.isNotBlank()) Text(loc.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                                Text(loc.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                IconButton(onClick = { locations = locations.toMutableList().also { it.removeAt(i) }; markChanged() }, Modifier.size(32.dp)) {
+                                    Icon(Icons.Default.Close, "Remove", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                                }
                             }
-                            IconButton(onClick = {
-                                val q = if (loc.latitude != null) "geo:${loc.latitude},${loc.longitude}?q=${loc.latitude},${loc.longitude}(${Uri.encode(loc.label.ifBlank { loc.address })})" else "geo:0,0?q=${Uri.encode(loc.address)}"
-                                try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(q))) } catch (_: Exception) {}
-                            }, Modifier.size(36.dp)) {
-                                Icon(Icons.Default.Map, "Open in Maps", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                            }
-                            IconButton(onClick = { locations = locations.toMutableList().also { it.removeAt(i) }; markChanged() }, Modifier.size(32.dp)) {
-                                Icon(Icons.Default.Close, "Remove", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                            }
-                        }
-                    }
+                        },
+                        readOnly = true,
+                        enabled = false,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = false,
+                        maxLines = 2,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                            disabledBorderColor = MaterialTheme.colorScheme.outline,
+                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
                 }
             }
             AddBtn("Add Location") { showLocationDialog = -1; locType = ""; locAddress = ""; locLabel = "" }
@@ -608,27 +609,14 @@ private fun ProjectEditableTab(project: Project, onSave: (Project) -> Unit, audi
     }
 
     // ── Location dialog ──
-    if (showLocationDialog != null) {
+    if (showLocationDialog != null && !showMapPicker) {
         val scope = rememberCoroutineScope()
         AlertDialog(
             onDismissRequest = { showLocationDialog = null }, shape = RoundedCornerShape(24.dp),
             title = { Text(if (showLocationDialog == -1) "Add Location" else "Edit Location") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Type selector chips
-                    Text("Type", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    @OptIn(ExperimentalLayoutApi::class)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                        locationTypes.forEach { t ->
-                            FilterChip(
-                                selected = locType == t, onClick = { locType = if (locType == t) "" else t },
-                                label = { Text(t, style = MaterialTheme.typography.labelSmall) },
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                        }
-                    }
-
-                    OutlinedTextField(value = locLabel, onValueChange = { locLabel = it }, label = { Text("Label (e.g. Main Stage)") }, leadingIcon = { Icon(Icons.Default.Label, null) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), singleLine = true)
+                    OutlinedTextField(value = locLabel, onValueChange = { locLabel = it }, label = { Text("Label (e.g. Rehearsal, Main Stage)") }, leadingIcon = { Icon(Icons.Default.Label, null) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), singleLine = true)
 
                     // Address with search button
                     OutlinedTextField(
@@ -664,6 +652,16 @@ private fun ProjectEditableTab(project: Project, onSave: (Project) -> Unit, audi
                         modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), maxLines = 3
                     )
 
+                    OutlinedButton(
+                        onClick = { showMapPicker = true },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Map, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (locLat != null) "Change Pin on Map" else "Pick on Map")
+                    }
+
                     // Map preview + coordinates
                     if (locLat != null && locLng != null) {
                         Card(
@@ -673,7 +671,6 @@ private fun ProjectEditableTab(project: Project, onSave: (Project) -> Unit, audi
                             }
                         ) {
                             Column {
-                                // Static map image from OpenStreetMap
                                 coil.compose.AsyncImage(
                                     model = "https://staticmap.openstreetmap.de/staticmap.php?center=${locLat},${locLng}&zoom=15&size=400x200&markers=${locLat},${locLng},red-pushpin",
                                     contentDescription = "Map preview",
@@ -690,26 +687,35 @@ private fun ProjectEditableTab(project: Project, onSave: (Project) -> Unit, audi
                             }
                         }
                     } else if (locAddress.isNotBlank()) {
-                        // No coordinates yet — show search hint
-                        OutlinedButton(onClick = {
-                            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(locAddress)}"))) } catch (_: Exception) {}
-                        }, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                            Icon(Icons.Default.Map, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Search in Google Maps")
-                        }
-                        Text("Tip: Type an address and tap the search icon to find coordinates", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Tip: Tap the search icon to geocode, or use \"Pick on Map\" to drop a pin.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             },
             confirmButton = {
+                val hasCoords = locLat != null && locLng != null
                 Button(onClick = {
-                    if (locAddress.isNotBlank()) {
-                        val entry = LocationEntry(type = locType, address = locAddress.trim(), label = locLabel.trim(), latitude = locLat, longitude = locLng)
+                    if (locAddress.isNotBlank() || hasCoords) {
+                        val addr = if (locAddress.isNotBlank()) locAddress.trim()
+                            else String.format("%.5f, %.5f", locLat, locLng)
+                        val entry = LocationEntry(type = locType, address = addr, label = locLabel.trim(), latitude = locLat, longitude = locLng)
                         locations = if (showLocationDialog == -1) locations + entry else locations.toMutableList().also { it[showLocationDialog!!] = entry }
                         markChanged()
                     }; showLocationDialog = null
-                }, shape = RoundedCornerShape(12.dp), enabled = locAddress.isNotBlank()) { Text("Save") }
+                }, shape = RoundedCornerShape(12.dp), enabled = locAddress.isNotBlank() || hasCoords) { Text("Save") }
             },
             dismissButton = { OutlinedButton(onClick = { showLocationDialog = null }, shape = RoundedCornerShape(12.dp)) { Text("Cancel") } }
+        )
+    }
+
+    if (showMapPicker) {
+        MapPickerDialog(
+            initialLat = locLat, initialLng = locLng, initialAddress = locAddress,
+            onDismiss = { showMapPicker = false },
+            onConfirm = { lat, lng, addr ->
+                locLat = lat; locLng = lng
+                if (addr.isNotBlank()) locAddress = addr
+                showMapPicker = false
+            }
         )
     }
 

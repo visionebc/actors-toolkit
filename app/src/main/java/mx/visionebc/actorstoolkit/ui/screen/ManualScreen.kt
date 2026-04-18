@@ -69,6 +69,50 @@ fun ManualScreen(onBack: () -> Unit) {
             }
 
             Section(
+                icon = Icons.Default.Dashboard,
+                title = "Inside a project",
+                intro = "Every project has its own bottom navigation: Project, Casting, Auditions, Scripts, Settings."
+            ) {
+                Step(
+                    number = 1,
+                    heading = "Switch tabs freely",
+                    body = "Your position is remembered. Jump from Scripts to Auditions and back — the project stays loaded."
+                )
+                Step(
+                    number = 2,
+                    heading = "Settings anywhere",
+                    body = "The floating gear in the top-right corner opens Settings without leaving your current context."
+                )
+            }
+
+            Section(
+                icon = Icons.Default.Groups,
+                title = "Castings & Characters",
+                intro = "A casting groups characters for a production. Each character can be linked to one or more scripts for practice."
+            ) {
+                Step(
+                    number = 1,
+                    heading = "Create a casting",
+                    body = "Open a project, go to the Casting tab, tap +. Give it a name (e.g., \"Act 1 Leads\") and optional notes."
+                )
+                Step(
+                    number = 2,
+                    heading = "Add characters",
+                    body = "Open a casting and tap + to add characters. Each character holds a name and notes — useful for backstory, physical description, or direction."
+                )
+                Step(
+                    number = 3,
+                    heading = "Link characters to scripts",
+                    body = "From a character's detail screen, tap \"Add Script\" to import a new one just for this character, or \"Pick Script\" to link an existing script already in the project."
+                )
+                Step(
+                    number = 4,
+                    heading = "Why link?",
+                    body = "Linked scripts appear in both the character's page and the project's Scripts tab. Your practice data stays attached to the character, not just the script."
+                )
+            }
+
+            Section(
                 icon = Icons.Default.TheaterComedy,
                 title = "Auditions",
                 intro = "Track every audition with role, status, date & time, notes, links, attachments and images."
@@ -92,18 +136,23 @@ fun ManualScreen(onBack: () -> Unit) {
 
             Section(
                 icon = Icons.Default.Description,
-                title = "Scripts and Characters",
-                intro = "Import a PDF, TXT or FDX, tag your role, and the app prepares character lists for practice."
+                title = "Scripts",
+                intro = "Import a PDF, TXT or FDX. The app parses characters and lines automatically."
             ) {
                 Step(
                     number = 1,
                     heading = "Import into a project",
-                    body = "Open a project, go to the Scripts tab, tap Import. The app parses characters and lines automatically."
+                    body = "Open a project, go to the Scripts tab, tap Import. Scripts imported here belong to the project at large."
                 )
                 Step(
                     number = 2,
                     heading = "Mark your role",
                     body = "The first time you open practice, pick which character you play — that's \"my role\" for this script."
+                )
+                Step(
+                    number = 3,
+                    heading = "Characters vs scripts",
+                    body = "Scripts live in the project. Characters live in castings. Linking them from a character's detail screen shows the same script in both places without duplication."
                 )
             }
 
@@ -142,17 +191,17 @@ fun ManualScreen(onBack: () -> Unit) {
                 Step(
                     number = 1,
                     heading = "Open from Contacts",
-                    body = "Inside a project, open the Contacts tab. On a contact card, tap the voice icon. The contact is pre-selected — you only pick the script and your character."
+                    body = "Inside a project, open the Project tab and scroll to Contacts. On a contact card, tap the voice icon. The contact is pre-selected — you only pick the script and your character."
                 )
                 Step(
                     number = 2,
                     heading = "Send via anything",
-                    body = "Tap \"Send via…\". Android's share sheet opens with every app that accepts a ZIP — WhatsApp, Telegram, Signal, email, Drive, Bluetooth, and so on."
+                    body = "Tap \"Send via…\". Android's share sheet opens with every app that accepts a ZIP — WhatsApp, Telegram, Signal, email, Drive, Bluetooth, and so on. If the contact has an email saved, it's pre-filled when you pick an email app."
                 )
                 Step(
                     number = 3,
                     heading = "How import works",
-                    body = "When your partner imports the ZIP, the app matches each project by its internal ID and merges the recordings into their existing project instead of creating a duplicate. If they don't have the project yet, a new one is created."
+                    body = "When your partner imports the ZIP, the app matches each project by its internal share ID and merges the recordings into their existing project instead of creating a duplicate. If they don't have the project yet, a new one is created."
                 )
             }
 
@@ -219,14 +268,24 @@ fun ManualScreen(onBack: () -> Unit) {
             }
 
             Section(
-                icon = Icons.Default.Settings,
-                title = "Settings anywhere",
-                intro = "The Settings gear floats in the top-right corner on every screen."
+                icon = Icons.Default.Share,
+                title = "Sharing a project",
+                intro = "Share any project as JSON or ZIP with fine-grained control over what's included."
             ) {
                 Step(
                     number = 1,
-                    heading = "Tap from anywhere",
-                    body = "Open Settings from any screen by tapping the gear. It auto-hides when you're already in Settings or in the User Manual."
+                    heading = "Tap the share icon on a project card",
+                    body = "Check what to include: dates & locations, links, team, contacts, auditions, scripts, castings, recordings. Basic info (name, director, notes) always goes."
+                )
+                Step(
+                    number = 2,
+                    heading = "JSON or ZIP",
+                    body = "Without recordings you get a compact JSON. Turn recordings on and the export becomes a ZIP so the audio files travel with it."
+                )
+                Step(
+                    number = 3,
+                    heading = "Smart import",
+                    body = "Importing the same project twice doesn't duplicate — the app matches by share ID and merges new data into the existing project."
                 )
             }
 

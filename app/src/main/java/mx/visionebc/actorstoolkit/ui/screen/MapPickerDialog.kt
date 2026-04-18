@@ -1,44 +1,136 @@
 package mx.visionebc.actorstoolkit.ui.screen
 
-import android.annotation.SuppressLint
-import android.webkit.JavascriptInterface
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.content.Context
+import android.location.Geocoder
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.MapEventsOverlay
+import org.osmdroid.views.overlay.Marker
+import java.util.Locale
+
+private fun ensureOsmConfigured(ctx: Context) {
+    val cfg = Configuration.getInstance()
+    cfg.userAgentValue = ctx.packageName
+    cfg.osmdroidBasePath = ctx.getExternalFilesDir(null) ?: ctx.filesDir
+    cfg.osmdroidTileCache = ctx.getExternalFilesDir("osmdroid-tiles") ?: ctx.filesDir
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapPickerDialog(
     initialLat: Double?,
     initialLng: Double?,
+    initialAddress: String = "",
     onDismiss: () -> Unit,
-    onConfirm: (lat: Double, lng: Double) -> Unit
+    onConfirm: (lat: Double, lng: Double, address: String) -> Unit
 ) {
     val startLat = initialLat ?: 19.4326
     val startLng = initialLng ?: -99.1332
-    val startZoom = if (initialLat != null) 15 else 5
+    val startZoom = if (initialLat != null) 15.0 else 5.0
 
     var pickedLat by remember { mutableStateOf(initialLat) }
     var pickedLng by remember { mutableStateOf(initialLng) }
+    var address by remember { mutableStateOf(initialAddress) }
+    var searching by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    var mapView by remember { mutableStateOf<MapView?>(null) }
+    var marker by remember { mutableStateOf<Marker?>(null) }
+
+    LaunchedEffect(Unit) { ensureOsmConfigured(context) }
+
+    fun placeOrMoveMarker(lat: Double, lng: Double, recenter: Boolean) {
+        val mv = mapView ?: return
+        val point = GeoPoint(lat, lng)
+        val existing = marker
+        if (existing == null) {
+            val m = Marker(mv).apply {
+                position = point
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                isDraggable = true
+                setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
+                    override fun onMarkerDrag(m: Marker) {}
+                    override fun onMarkerDragStart(m: Marker) {}
+                    override fun onMarkerDragEnd(m: Marker) {
+                        pickedLat = m.position.latitude
+                        pickedLng = m.position.longitude
+                        reverseGeocodeAsync(scope, context, m.position.latitude, m.position.longitude) {
+                            address = it
+                        }
+                    }
+                })
+            }
+            mv.overlays.add(m)
+            marker = m
+        } else {
+            existing.position = point
+        }
+        if (recenter) mv.controller.animateTo(point)
+        mv.invalidate()
+    }
+
+    fun runForwardGeocode() {
+        if (address.isBlank()) return
+        searching = true
+        scope.launch(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                @Suppress("DEPRECATION")
+                val results = geocoder.getFromLocationName(address, 1)
+                val hit = results?.firstOrNull()
+                if (hit != null) {
+                    withContext(Dispatchers.Main) {
+                        pickedLat = hit.latitude
+                        pickedLng = hit.longitude
+                        hit.getAddressLine(0)?.let { if (it.isNotBlank()) address = it }
+                        placeOrMoveMarker(hit.latitude, hit.longitude, recenter = true)
+                        mapView?.controller?.setZoom(16.0)
+                    }
+                }
+            } catch (_: Exception) {}
+            withContext(Dispatchers.Main) { searching = false }
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true, dismissOnClickOutside = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true, dismissOnClickOutside = false, decorFitsSystemWindows = false)
     ) {
         Surface(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .imePadding(),
             color = MaterialTheme.colorScheme.background
         ) {
             Column(Modifier.fillMaxSize()) {
@@ -53,7 +145,7 @@ fun MapPickerDialog(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             } else {
-                                Text("Tap the map to drop a pin", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Type an address or tap the map", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     },
@@ -64,7 +156,7 @@ fun MapPickerDialog(
                         TextButton(
                             onClick = {
                                 val la = pickedLat; val lo = pickedLng
-                                if (la != null && lo != null) onConfirm(la, lo)
+                                if (la != null && lo != null) onConfirm(la, lo, address.trim())
                             },
                             enabled = pickedLat != null && pickedLng != null
                         ) {
@@ -76,29 +168,85 @@ fun MapPickerDialog(
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
 
-                Box(Modifier.fillMaxSize()) {
+                OutlinedTextField(
+                    value = address,
+                    onValueChange = { address = it },
+                    label = { Text("Address") },
+                    placeholder = { Text("Type an address and search") },
+                    leadingIcon = { Icon(Icons.Default.LocationOn, null) },
+                    trailingIcon = {
+                        IconButton(onClick = { keyboard?.hide(); runForwardGeocode() }, enabled = address.isNotBlank() && !searching) {
+                            if (searching) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            else Icon(Icons.Default.Search, "Search")
+                        }
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { keyboard?.hide(); runForwardGeocode() }),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                )
+
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
                         factory = { ctx ->
-                            @SuppressLint("SetJavaScriptEnabled")
-                            val wv = WebView(ctx).apply {
-                                settings.javaScriptEnabled = true
-                                settings.domStorageEnabled = true
-                                webViewClient = WebViewClient()
-                                addJavascriptInterface(object {
-                                    @JavascriptInterface
-                                    fun onPick(lat: Double, lng: Double) {
-                                        pickedLat = lat
-                                        pickedLng = lng
+                            ensureOsmConfigured(ctx)
+                            MapView(ctx).apply {
+                                setTileSource(TileSourceFactory.MAPNIK)
+                                setMultiTouchControls(true)
+                                setUseDataConnection(true)
+                                controller.setZoom(startZoom)
+                                controller.setCenter(GeoPoint(startLat, startLng))
+
+                                val tapReceiver = object : MapEventsReceiver {
+                                    override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
+                                        pickedLat = p.latitude
+                                        pickedLng = p.longitude
+                                        placeOrMoveMarker(p.latitude, p.longitude, recenter = false)
+                                        reverseGeocodeAsync(scope, ctx, p.latitude, p.longitude) {
+                                            address = it
+                                        }
+                                        return true
                                     }
-                                }, "AndroidBridge")
-                                loadDataWithBaseURL(
-                                    "https://openstreetmap.org/",
-                                    buildLeafletHtml(startLat, startLng, startZoom, initialLat, initialLng),
-                                    "text/html", "utf-8", null
-                                )
+                                    override fun longPressHelper(p: GeoPoint): Boolean = false
+                                }
+                                overlays.add(0, MapEventsOverlay(tapReceiver))
+
+                                mapView = this
+
+                                if (initialLat != null && initialLng != null) {
+                                    val m = Marker(this).apply {
+                                        position = GeoPoint(initialLat, initialLng)
+                                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                        isDraggable = true
+                                        setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
+                                            override fun onMarkerDrag(m: Marker) {}
+                                            override fun onMarkerDragStart(m: Marker) {}
+                                            override fun onMarkerDragEnd(m: Marker) {
+                                                pickedLat = m.position.latitude
+                                                pickedLng = m.position.longitude
+                                                reverseGeocodeAsync(scope, ctx, m.position.latitude, m.position.longitude) {
+                                                    address = it
+                                                }
+                                            }
+                                        })
+                                    }
+                                    overlays.add(m)
+                                    marker = m
+                                    invalidate()
+                                }
                             }
-                            wv
+                        },
+                        onRelease = { mv ->
+                            mv.onDetach()
                         }
                     )
                 }
@@ -107,42 +255,22 @@ fun MapPickerDialog(
     }
 }
 
-private fun buildLeafletHtml(centerLat: Double, centerLng: Double, zoom: Int, pinLat: Double?, pinLng: Double?): String {
-    val initialMarker = if (pinLat != null && pinLng != null) {
-        "var marker = L.marker([$pinLat, $pinLng], {draggable:true}).addTo(map);" +
-            "marker.on('dragend', function(e){ var p = marker.getLatLng(); AndroidBridge.onPick(p.lat, p.lng); });"
-    } else {
-        "var marker = null;"
+private fun reverseGeocodeAsync(
+    scope: kotlinx.coroutines.CoroutineScope,
+    ctx: Context,
+    lat: Double,
+    lng: Double,
+    onResult: (String) -> Unit
+) {
+    scope.launch(Dispatchers.IO) {
+        try {
+            val geocoder = Geocoder(ctx, Locale.getDefault())
+            @Suppress("DEPRECATION")
+            val results = geocoder.getFromLocation(lat, lng, 1)
+            val formatted = results?.firstOrNull()?.getAddressLine(0)
+            if (!formatted.isNullOrBlank()) {
+                withContext(Dispatchers.Main) { onResult(formatted) }
+            }
+        } catch (_: Exception) {}
     }
-    return """
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
-<link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' />
-<script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
-<style>html,body,#map{height:100%;margin:0;padding:0;}</style>
-</head>
-<body>
-<div id='map'></div>
-<script>
-var map = L.map('map').setView([$centerLat, $centerLng], $zoom);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
-}).addTo(map);
-$initialMarker
-map.on('click', function(e){
-    if (marker) { marker.setLatLng(e.latlng); }
-    else {
-        marker = L.marker(e.latlng, {draggable:true}).addTo(map);
-        marker.on('dragend', function(ev){ var p = marker.getLatLng(); AndroidBridge.onPick(p.lat, p.lng); });
-    }
-    AndroidBridge.onPick(e.latlng.lat, e.latlng.lng);
-});
-</script>
-</body>
-</html>
-""".trimIndent()
 }

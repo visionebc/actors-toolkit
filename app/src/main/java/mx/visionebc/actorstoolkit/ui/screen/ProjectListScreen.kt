@@ -417,28 +417,35 @@ fun ProjectListScreen(
             @Composable
             fun row(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
                 Row(
-                    Modifier.fillMaxWidth().clickable { onChange(!checked) }.padding(vertical = 2.dp),
+                    Modifier.fillMaxWidth().clickable { onChange(!checked) },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Checkbox(checked = checked, onCheckedChange = onChange)
+                    Checkbox(
+                        checked = checked,
+                        onCheckedChange = onChange,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
                     Text(label, style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            row("Dates & locations", optDates) { optDates = it }
-            row("Links & attachments", optLinks) { optLinks = it }
-            row("Team members", optTeam) { optTeam = it }
-            row("Contacts", optContacts) { optContacts = it }
-            row("Auditions", optAuditions) { optAuditions = it }
-            row("Scripts (full text)", optScripts) { optScripts = it }
-            row("Castings & characters", optCastings) { optCastings = it }
-            row("Audio recordings (larger file)", optRecordings && optScripts) { optRecordings = it }
-            if (optRecordings && !optScripts) {
-                Text(
-                    "Enable Scripts to include recordings.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(start = 40.dp)
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                row("Dates & locations", optDates) { optDates = it }
+                row("Links & attachments", optLinks) { optLinks = it }
+                row("Team members", optTeam) { optTeam = it }
+                row("Contacts", optContacts) { optContacts = it }
+                row("Auditions", optAuditions) { optAuditions = it }
+                row("Scripts (full text)", optScripts) { optScripts = it }
+                row("Castings & characters", optCastings) { optCastings = it }
+                row("Audio recordings (larger file)", optRecordings && optScripts) { optRecordings = it }
+                if (optRecordings && !optScripts) {
+                    Text(
+                        "Enable Scripts to include recordings.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(start = 40.dp)
+                    )
+                }
             }
         }
     }
